@@ -3,7 +3,16 @@ import Combine
 
 var subscriptions = Set<AnyCancellable>()
 
-<#Add your code here#>
+example(of: "challenge") {
+  let numbers = (1...100).publisher
+  
+  numbers
+    .dropFirst(50)
+    .prefix(20)
+    .filter({ $0.isMultiple(of: 2) })
+    .sink(receiveValue: { print($0) })
+    .store(in: &subscriptions)
+}
 
 /// Copyright (c) 2020 Razeware LLC
 ///
