@@ -2,8 +2,31 @@ import Combine
 import SwiftUI
 import PlaygroundSupport
 
-<# Add your code here #>
+let valuesPerSecond = 1.0
+let delayInSeconds = 1.5
 
+let sourcePublisher = PassthroughSubject<Date, Never>()
+
+let delayPublisher = sourcePublisher
+    .delay(for: .seconds(delayInSeconds), scheduler: DispatchQueue.main)
+
+let subscription = Timer.publish(every: 1.0 / valuesPerSecond, on: .main, in: .common)
+    .autoconnect()
+    .subscribe(sourcePublisher)
+
+let sourceTimeline = TimelineView(title: "Emitted values (\(valuesPerSecond) per sec.):")
+
+let delayedTimeline = TimelineView(title: "Delayed values (with a \(delayInSeconds)s delay):")
+
+let view = VStack(spacing: 50) {
+    sourceTimeline
+    delayedTimeline
+}
+
+sourcePublisher.displayEvents(in: sourceTimeline)
+delayPublisher.displayEvents(in: delayedTimeline)
+
+PlaygroundPage.current.liveView = UIHostingController(rootView: view.frame(width: 375, height: 600))
 //: [Next](@next)
 /*:
  Copyright (c) 2020 Razeware LLC

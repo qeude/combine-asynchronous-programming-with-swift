@@ -2,8 +2,37 @@ import Combine
 import SwiftUI
 import PlaygroundSupport
 
-<# Add your code here #>
+let subject = PassthroughSubject<String, Never>()
 
+let measureSubject = subject.measureInterval(using: DispatchQueue.main)
+let measureSubject2 = subject.measureInterval(using: RunLoop.main)
+
+let subjectTimeline = TimelineView(title: "Emitted values")
+let measuredTimeline = TimelineView(title: "Measured values")
+
+let view = VStack(spacing: 100) {
+    subjectTimeline
+    measuredTimeline
+}
+
+PlaygroundPage.current.liveView = UIHostingController(rootView: view.frame(width: 375, height: 600))
+
+subject.displayEvents(in: subjectTimeline)
+measureSubject.displayEvents(in: measuredTimeline)
+
+let subscription1 = subject.sink {
+    print("+\(deltaTime)s: Subject emitted: \($0)")
+}
+
+let subscription2 = measureSubject.sink {
+    print("+\(deltaTime)s: Measured emitted: \(Double($0.magnitude) / 1_000_000_000.0)")
+}
+
+let subscription3 = measureSubject2.sink {
+    print("+\(deltaTime)s: Measured2 emitted: \($0)")
+}
+
+subject.feed(with: typingHelloWorld)
 /*:
  Copyright (c) 2020 Razeware LLC
 
