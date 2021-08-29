@@ -4,7 +4,7 @@ import PlaygroundSupport
 
 let subject = PassthroughSubject<String, Never>()
 
-let measureSubject = subject.measureInterval(using: DispatchQueue.main)
+let meagithubsureSubject = subject.measureInterval(using: DispatchQueue.main)
 let measureSubject2 = subject.measureInterval(using: RunLoop.main)
 
 let subjectTimeline = TimelineView(title: "Emitted values")
