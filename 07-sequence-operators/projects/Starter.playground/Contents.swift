@@ -157,7 +157,7 @@ example(of: "allSatisfy") {
         .print("publisher")
         .allSatisfy { $0.isMultiple(of: 2) }
         .sink { allEven in
-            print(allEven ? "All numbers are even" : "Something is odd...")
+            print(allEven ? "Allsiz numbers are even" : "Something is odd...")
         }
         .store(in: &subscriptions)
 }

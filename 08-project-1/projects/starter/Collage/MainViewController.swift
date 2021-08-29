@@ -105,6 +105,9 @@ class MainViewController: UIViewController {
       .prefix(while: { [unowned self] _ in
         return self.images.value.count < 6
       })
+      .filter { newImage in
+        newImage.size.width > newImage.size.height
+      }
       .share()
 
     newPhotos
@@ -121,6 +124,19 @@ class MainViewController: UIViewController {
         self.updateUI(photos: self.images.value)
       } receiveValue: { _ in }
       .store(in: &subscriptions)
+
+    photos.selectedPhotos
+      .filter { [unowned self] images in
+        self.images.value.count == 5
+      }
+      .flatMap { [unowned self] _ in
+        self.alert(title: "Limit reached", text: "To add more than 6 photos please purchase Collage Pro")
+      }
+      .sink { [unowned self] _ in
+        self.navigationController?.popViewController(animated: true)
+      }
+      .store(in: &subscriptions)
+
   }
   
   private func showMessage(_ title: String, description: String? = nil) {

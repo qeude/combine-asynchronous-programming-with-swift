@@ -40,6 +40,7 @@ class PhotosViewController: UICollectionViewController {
   
   // MARK: - Private properties
   private var selectedPhotosSubject = PassthroughSubject<UIImage, Never>()
+  private var subscriptions = Set<AnyCancellable>()
 
   private lazy var photos = PhotosViewController.loadPhotos()
   private lazy var imageManager = PHCachingImageManager()
@@ -56,15 +57,17 @@ class PhotosViewController: UICollectionViewController {
     super.viewDidLoad()
     
     // Check for Photos access authorization and reload the list if authorized.
-    PHPhotoLibrary.fetchAuthorizationStatus { [weak self] status in
-      if status {
-        self?.photos = PhotosViewController.loadPhotos()
-        
-        DispatchQueue.main.async {
+    PHPhotoLibrary.isAuthorized
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] status in
+        if status {
+          self?.photos = PhotosViewController.loadPhotos()
           self?.collectionView.reloadData()
+        } else {
+          _ = self?.alert(title: "No access to photos", text: "No access to photos")
         }
       }
-    }
+      .store(in: &subscriptions)
   }
   
   override func viewWillDisappear(_ animated: Bool) {
