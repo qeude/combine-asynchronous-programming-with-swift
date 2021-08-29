@@ -26,16 +26,21 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+import Combine
 import UIKit
 import Photos
 
 class PhotosViewController: UICollectionViewController {
   
   // MARK: - Public properties
-  
+  var selectedPhotos: AnyPublisher<UIImage, Never> {
+    return selectedPhotosSubject.eraseToAnyPublisher()
+  }
+  @Published var selectedPhotosCount = 0
   
   // MARK: - Private properties
-    
+  private var selectedPhotosSubject = PassthroughSubject<UIImage, Never>()
+
   private lazy var photos = PhotosViewController.loadPhotos()
   private lazy var imageManager = PHCachingImageManager()
   
@@ -64,6 +69,7 @@ class PhotosViewController: UICollectionViewController {
   
   override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
+    selectedPhotosSubject.send(completion: .finished)
   }
     
   // MARK: - UICollectionViewDataSource
@@ -107,7 +113,8 @@ class PhotosViewController: UICollectionViewController {
       }
       
       // Send the selected photo
-      
+      self.selectedPhotosSubject.send(image)
+      self.selectedPhotosCount += 1
     })
   }
 

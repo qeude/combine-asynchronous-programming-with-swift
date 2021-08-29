@@ -26,6 +26,7 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+import Combine
 import UIKit
 
 class MainViewController: UIViewController {
@@ -42,14 +43,23 @@ class MainViewController: UIViewController {
   @IBOutlet weak var itemAdd: UIBarButtonItem!
 
   // MARK: - Private properties
-  
+  private var subscriptions = Set<AnyCancellable>()
+  private let images = CurrentValueSubject<[UIImage], Never>([])
 
   // MARK: - View controller
   
   override func viewDidLoad() {
     super.viewDidLoad()
     let collageSize = imagePreview.frame.size
-    
+    images
+      .handleEvents(receiveOutput: { [weak self] photos in
+        self?.updateUI(photos: photos)
+      })
+      .map { photos in
+        UIImage.collage(images: photos, size: collageSize)
+      }
+      .assign(to: \.image, on: imagePreview)
+      .store(in: &subscriptions)
   }
   
   private func updateUI(photos: [UIImage]) {
@@ -62,23 +72,65 @@ class MainViewController: UIViewController {
   // MARK: - Actions
   
   @IBAction func actionClear() {
-    
+    images.send([])
   }
   
   @IBAction func actionSave() {
     guard let image = imagePreview.image else { return }
-    
+    PhotoWriter.save(image)
+      .sink(receiveCompletion: { [unowned self] completion in
+        if case .failure(let error) = completion {
+          self.showMessage("Error", description: error.localizedDescription)
+        }
+        self.actionClear()
+      }) { [unowned self] id in
+        self.showMessage("Save with id: \(id)")
+      }
+      .store(in: &subscriptions)
   }
   
   @IBAction func actionAdd() {
-    
+//    let newImages = images.value + [UIImage(named: "IMG_1907.jpg")!]
+//    images.send(newImages)
+    let photos = storyboard?.instantiateViewController(withIdentifier: String(describing: PhotosViewController.self)) as! PhotosViewController
+
+    photos.$selectedPhotosCount
+      .filter { $0 > 0 }
+      .map { "Selected \($0) photos"}
+      .assign(to: \.title, on: self)
+      .store(in: &subscriptions)
+
+    navigationController?.pushViewController(photos, animated: true)
+    let newPhotos = photos.selectedPhotos
+      .prefix(while: { [unowned self] _ in
+        return self.images.value.count < 6
+      })
+      .share()
+
+    newPhotos
+      .map { [unowned self] newImage in
+        return self.images.value + [newImage]
+      }
+      .assign(to: \.value, on: images)
+      .store(in: &subscriptions)
+
+    newPhotos
+      .ignoreOutput()
+      .delay(for: 2.0, scheduler: DispatchQueue.main)
+      .sink { [unowned self] _ in
+        self.updateUI(photos: self.images.value)
+      } receiveValue: { _ in }
+      .store(in: &subscriptions)
   }
   
   private func showMessage(_ title: String, description: String? = nil) {
-    let alert = UIAlertController(title: title, message: description, preferredStyle: .alert)
-    alert.addAction(UIAlertAction(title: "Close", style: .default, handler: { alert in
-      self.dismiss(animated: true, completion: nil)
-    }))
-    present(alert, animated: true, completion: nil)
+    alert(title: title, text: description)
+      .sink(receiveValue: { _ in })
+      .store(in: &subscriptions)
+//    let alert = UIAlertController(title: title, message: description, preferredStyle: .alert)
+//    alert.addAction(UIAlertAction(title: "Close", style: .default, handler: { alert in
+//      self.dismiss(animated: true, completion: nil)
+//    }))
+//    present(alert, animated: true, completion: nil)
   }
 }
